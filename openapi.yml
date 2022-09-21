@@ -1,0 +1,354 @@
+openapi: 3.0.3
+
+info:
+  title: OpenAPI Specification for Card Access of PV Proxy Service
+  description: |
+    OpenAPI Specification for Card Access of the PowerVision system to 3rd party system. 
+    
+    PV ACS system provides API’s to read, add, edit, and delete cards into the ACS system. APIs are provided as REST API format. 
+    3rd party systems can use these API’s to manage the cards.
+
+    **Version History:**
+      - 1.0.0.0 – 20th Sep 2022
+        Initial version    
+  version: 1.0.0.0
+
+servers:
+  - url: http://{hostname}:{port}/pvcardaccess/cards
+    description: PV Proxy Service URL
+    variables:
+      hostname:
+          default: '127.0.0.1'
+          description: Hostname or IP address of the server that hosts PV Proxy service.
+      port:
+          default: '21126'
+          description: Port number used by the PV Proxy service to expose Card Access functionality.
+
+tags:
+    - name: card
+      description: Operations about Card
+    - name: accessgroup
+      description: Operations about Access Group
+
+paths:
+  /cards:
+    post:
+      summary: Adds a new card to the system.     
+      operationId: addCard
+      tags:
+        - card  
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Card'        
+      responses:
+        200:
+          $ref: '#/components/responses/200Response'
+        401:
+          $ref: '#/components/responses/401Response'          
+        500:
+          $ref: '#/components/responses/500Response'
+  /cards/{cardId}:
+    get:
+      summary: Get the card details for the given card number.      
+      operationId: getCard
+      tags:
+          - card     
+      parameters:
+        - name: cardId
+          description: Card number.
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 05520840
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+              description: Card number
+              example: '80000001'
+      responses:
+        200:
+          $ref: '#/components/responses/200Response'
+        401:
+          $ref: '#/components/responses/401Response'          
+        500:
+          $ref: '#/components/responses/500Response'
+    put:
+      summary: Update an existing card in the system.      
+      operationId: editCard
+      tags:
+          - card     
+      parameters:
+        - name: cardId
+          description: Card number.
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 05520840
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Card'        
+      responses:
+        200:
+          $ref: '#/components/responses/200Response'
+        401:
+          $ref: '#/components/responses/401Response'          
+        500:
+          $ref: '#/components/responses/500Response'
+    delete:
+      summary: Delete an existing visitor card from the system     
+      operationId: deleteCard
+      tags:
+          - card
+      parameters:
+        - name: cardId
+          description: Card number.
+          in: path
+          required: true
+          schema:
+            type: string
+            example: 05520840
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+              description: Card number
+              example: '80000001'
+      responses:
+        200:
+          $ref: '#/components/responses/200Response'
+        401:
+          $ref: '#/components/responses/401Response'          
+        500:
+          $ref: '#/components/responses/500Response'
+  /accessgroups:
+    get:
+      summary: Get all the access groups that can be assigned to the cards in the system.      
+      operationId: getAccessGroups
+      tags:
+          - accessgroup      
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessGroupResponse'
+        401:
+          $ref: '#/components/responses/401Response'          
+        500:
+          $ref: '#/components/responses/500Response'
+  
+components:
+  schemas:
+    Card:
+      type: object
+      properties:
+        CardNumber:
+          type: string
+          description: Unique card number of the card holder.
+          maxLength: 16
+          example: 'V69843641'
+        CardHolderName:
+          type: string
+          description: Card holder name.
+          maxLength: 50
+          example: 'John Smith'
+        CardStartValidDate:
+          type: string
+          format: date
+          description: Start date of the validity for the card. YYYY/MM/DD format.
+          example: '2021/07/20'
+        StartTime:
+          type: string
+          description: Start time of the validity for the card. 24 hrs HH:mm format. Ignored if IsVisitor property is false.
+          example: '10:00'
+        CardExpiryDate:
+          type: string
+          format: date
+          description: End date of the validity for the card. YYYY/MM/DD format.
+          example: '2021/07/25'
+        EndTime:
+          type: string
+          description: End time of the validity for the card. 24 hrs HH:mm format. Ignored if IsVisitor property is false
+          example: '18:00'
+        IsVisitor:
+          type: boolean
+          description: If true, then StartTime and EndTime are mandatory. If false, then StartTime and EndTime are discarded. This (visitor or Staff) information is stored as part of a UserField interally by the system.
+          default: false
+        AccessGroups:
+          description: List of access groups associated for the card. If not specified, the default access group is read from the PowerVision system settings. These IDs must be already present in the system.
+          type: array
+          items:
+            type: integer                                        
+          example:
+            - 5
+            - 6
+        CardCSN:
+          type: string
+          description: Card Serial Number for the card. Max length of 14
+          maxLength: 14
+          default: null 
+          example: '50001004'
+        Pin:
+          type: string
+          description: Pin to enter to get access. Max length of 6
+          maxLength: 4
+          default: null
+          example: '1234'
+        LostCardCount:
+          type: integer
+          description: Number of times the card is lost. 
+          default: 0
+          example: 2
+        CardScheme:
+          type: string
+          description: Type of the card scheme used. Ignore for now.  
+        CardValidationType:
+          type: integer
+          description: Type of access validation to use for the card.
+          default: 0
+          example: 0             
+        UserFields:
+          type: array
+          description: Additional details about the card. Each field's value can be of max length 50. UserField is a name value pair of strings. 
+          items:
+            type: object
+            properties:
+              Name:
+                type: string
+                description: Name of the User Field. 
+              Value:
+                type: string
+                description: Value of the User failed.
+                maxLength: 50 
+          example:
+            - Name: 'RoomNumber'
+              Value: '125'
+            - Name: 'NRIC'
+              Value: 'G3232323E'
+        AllowFreeExit:
+          type: boolean
+          description: Whether to allow exit even if system doesn't have entry. If true, then person can exit through the turnstile even after the EndTime.
+          default: false
+        FaceTemplate:
+          type: string
+          format: base64
+          description: Base64 encoded photo of person’s face.
+          example: 'iVBORw0KGgoAAAANSUhEUgAAAK8AAAC2C...'
+      required:
+          - CardNumber
+          - CardHolderName
+          - CardStartValidDate
+          - StartTime
+          - CardExpiryDate
+          - EndTime
+      example:
+        CardNumber: 'V69843641'
+        CardHolderName: 'John Smith'
+        CardExpiryDate: '2021/07/25'
+        StartTime: '11:13'
+        CardStartValidDate: '2021/07/25'
+        EndTime: '18:00'
+        CardCSN: '50010004'
+        AccessGroups:
+          - 5
+        UserFields: 
+          - Name: 'RoomNumber'
+            Value: '125'
+          - Name: 'NRIC'
+            Value: 'G3232323E'
+    Response:
+      type: object
+      properties:
+        IsSucceeded:
+          type: boolean
+          description: Status of the operation. 
+        Remarks:
+          type: string
+          description: Description of the success or failure message. 
+      required:
+        - IsSucceeded
+        - Remarks
+      example:
+        IsSucceed: true
+        Remarks: Success
+    AccessGroupResponse:
+        type: object
+        properties:
+          IsSucceeded:
+            type: boolean
+            description: Status of the operation. 
+          Remarks:
+            type: string
+            description: Description of the success or failure message. 
+          AccessGroups:
+            type: array
+            items:
+              properties:
+                Description: 
+                  type: string
+                  description: Name of the access group
+                ID: 
+                  type: integer
+                  description: ID of the access group
+              required:
+                - Description
+                - ID
+            example:
+              - Description: Entrance
+                ID: 1
+              - Description: Parking Basement
+                ID: 2
+          
+  responses:
+    200Response:
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Response'
+          example:
+            IsSucceed: true
+            Remarks: Success  
+    401Response:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Response'
+          example:
+            IsSucceed: false
+            Remarks: Incorrect CardStartValidDate format
+    500Response:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Response'   
+          example:
+            IsSucceed: false
+            Remarks: Unable to connect to the SQL server  
+    defaultResponse:
+      description: Unexpected error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Response'
+
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+      description: Username and Password should be passed with the HTTP Header. Username and password can be collected from Security System administrator. We authenticate by username and password, or by SSL certificate along with username and password
+
+security:
+  - BasicAuth: []
